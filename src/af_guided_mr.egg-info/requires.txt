@@ -1,5 +1,0 @@
-biopython
-pandas
-scikit-learn
-colorama
-psutil

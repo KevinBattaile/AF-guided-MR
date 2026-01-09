@@ -1,2 +1,0 @@
-[console_scripts]
-afmr = af_guided_mr.main:run
