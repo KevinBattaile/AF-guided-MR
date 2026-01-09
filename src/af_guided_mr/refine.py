@@ -3,15 +3,16 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 from queue import Queue, Empty
 import logging
-import utilities
+import .utils
 import os
 import glob
 import subprocess
 
+
 @dataclass
 class RefinementResult:
     cluster_number: int
-    r_work: float 
+    r_work: float
     r_free: float
     refinement_folder: str
     partial_pdb_path: str
@@ -19,12 +20,13 @@ class RefinementResult:
     mode: str
     tfz_score: float
     is_complete: bool = False
-    process: Optional[subprocess.Popen] = None 
+    process: Optional[subprocess.Popen] = None
 
     @property
     def phaser_output_map(self) -> str:
         """Get the path to the phaser output map file"""
-        return glob.glob(os.path.join(self.refinement_folder, '*.mtz'))[0]
+        return glob.glob(os.path.join(self.refinement_folder, "*.mtz"))[0]
+
 
 class AsyncRefinementManager:
     def __init__(self, r_free_threshold: float):
@@ -34,10 +36,17 @@ class AsyncRefinementManager:
         self.r_free_threshold = r_free_threshold
         self.success_queue = Queue()
 
-
-    def start_refinement(self, cluster_number: int, partial_pdb_path: str, mtz_path: str, 
-                        refine_output_root: str, nproc: int, phaser_output_dir: str,
-                        mode: str = "AF_cluster_mode", tfz_score: float = 0.0):
+    def start_refinement(
+        self,
+        cluster_number: int,
+        partial_pdb_path: str,
+        mtz_path: str,
+        refine_output_root: str,
+        nproc: int,
+        phaser_output_dir: str,
+        mode: str = "AF_cluster_mode",
+        tfz_score: float = 0.0,
+    ):
         future = self.executor.submit(
             self._run_refinement,
             cluster_number,
@@ -47,17 +56,27 @@ class AsyncRefinementManager:
             nproc,
             phaser_output_dir,
             mode,
-            tfz_score
+            tfz_score,
         )
         self.refinement_futures[cluster_number] = future
 
-    def _run_refinement(self, cluster_number: int, partial_pdb_path: str, mtz_path: str, 
-                        refine_output_root: str, nproc: int, phaser_output_dir: str,
-                        mode: str = "AF_cluster_mode", tfz_score: float = 0.0) -> RefinementResult:
+    def _run_refinement(
+        self,
+        cluster_number: int,
+        partial_pdb_path: str,
+        mtz_path: str,
+        refine_output_root: str,
+        nproc: int,
+        phaser_output_dir: str,
+        mode: str = "AF_cluster_mode",
+        tfz_score: float = 0.0,
+    ) -> RefinementResult:
         try:
             # Run refinement and get results
-            r_work, r_free, refinement_folder, process = utilities.rfactors_from_phenix_refine(
-                partial_pdb_path, mtz_path, refine_output_root, nproc=nproc
+            r_work, r_free, refinement_folder, process = (
+                utilities.rfactors_from_phenix_refine(
+                    partial_pdb_path, mtz_path, refine_output_root, nproc=nproc
+                )
             )
 
             # Create refinement result if valid R-factors exist
@@ -72,7 +91,7 @@ class AsyncRefinementManager:
                     mode=mode,
                     tfz_score=tfz_score,
                     is_complete=True,
-                    process=process
+                    process=process,
                 )
 
                 # Always store valid results
@@ -80,10 +99,14 @@ class AsyncRefinementManager:
 
                 # Only put in success queue if meets threshold
                 if r_free < self.r_free_threshold:
-                    logging.success(f"Refinement for cluster {cluster_number} successful with R-free: {r_free:.4f}")
+                    logging.success(
+                        f"Refinement for cluster {cluster_number} successful with R-free: {r_free:.4f}"
+                    )
                     self.success_queue.put(result)
                 else:
-                    logging.info(f"Refinement for cluster {cluster_number} completed with R-free: {r_free:.4f} (above threshold)")
+                    logging.info(
+                        f"Refinement for cluster {cluster_number} completed with R-free: {r_free:.4f} (above threshold)"
+                    )
 
                 return result
 
@@ -109,7 +132,9 @@ class AsyncRefinementManager:
                     result = future.result()
                     self.refinement_results[cluster_number] = result
                 except Exception as e:
-                    logging.error(f"Refinement for cluster {cluster_number} failed: {e}")
+                    logging.error(
+                        f"Refinement for cluster {cluster_number} failed: {e}"
+                    )
 
         # Clean up completed futures
         for cluster_number in completed:
@@ -126,18 +151,22 @@ class AsyncRefinementManager:
         for cluster_number, result in self.refinement_results.items():
             if result and result.process and result.process.poll() is None:
                 result.process.terminate()
-                logging.info(f"Terminated refinement process for cluster {cluster_number}")
-        
+                logging.info(
+                    f"Terminated refinement process for cluster {cluster_number}"
+                )
+
         # Then cancel futures and clean up
         for cluster_number, future in self.refinement_futures.items():
             if not future.done():
                 future.cancel()
-                logging.info(f"Cancelled refinement future for cluster {cluster_number}")
-        
+                logging.info(
+                    f"Cancelled refinement future for cluster {cluster_number}"
+                )
+
         # Clear everything
         self.refinement_futures.clear()
         self.refinement_results.clear()
-        
+
         # Empty the success queue
         while True:
             try:

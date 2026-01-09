@@ -1,0 +1,29 @@
+name: af_guided_mr
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - openmm
+  - pdbfixer
+  - kalign2
+  - hhsuite
+  - cctbx-base
+  - pandas
+  - pycuda
+  - pip
+  - pip:
+    - colabfold[alphafold-without-jax] @ git+https://github.com/sokrypton/ColabFold
+    - jax[cuda11_pip]
+    - nvidia-ml-py3
+    - gemmi
+    - mdtraj
+    - polyleven
+    - pandarallel
+    - scikit-learn
+    - hdbscan
+    - colorama
+    - biopython
+    - psutil
+    - -e .  # This installs YOUR package in editable mode!

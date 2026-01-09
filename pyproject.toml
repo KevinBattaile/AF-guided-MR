@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "af_guided_mr"
+version = "0.1.0"
+description = "Automated molecular replacement using AlphaFold and X-ray diffraction data"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "biopython",
+    "pandas",
+    "scikit-learn",
+    "colorama",
+    "psutil",
+    # Note: We rely on Conda for complex binary dependencies like openmm/cctbx
+]
+
+[project.scripts]
+# This allows users to type 'afmr' in the terminal to run your tool
+afmr = "af_guided_mr.main:run"
