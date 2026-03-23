@@ -1,7 +1,7 @@
 import os
 import time
 import subprocess
-from resources.AF_cluster import wait_for_available_gpu
+from af_guided_mr.structure_prediction.AF_cluster import wait_for_available_gpu
 import logging
 
 class ColabFold:
