@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 from queue import Queue, Empty
 import logging
-import utilities
+from af_guided_mr.utils import utilities
 import os
 import glob
 import subprocess

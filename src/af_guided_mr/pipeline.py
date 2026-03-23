@@ -11,38 +11,18 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from Bio.PDB import PDBParser
 
-from SequenceManager import SequenceManager
-from PDBManager import PDBManager
-from MolecularReplacement import MolecularReplacement
-from JobMonitor import JobMonitor
-from ColabFold import ColabFold
-from DataManager import DataManager
-from Refine import RefinementResult, AsyncRefinementManager
-import utilities
+from af_guided_mr.data_management.SequenceManager import SequenceManager
+from af_guided_mr.data_management.PDBManager import PDBManager
+from af_guided_mr.crystallography.MolecularReplacement import MolecularReplacement
+from af_guided_mr.utils.JobMonitor import JobMonitor
+from af_guided_mr.structure_prediction.ColabFold import ColabFold
+from af_guided_mr.data_management.DataManager import DataManager
+from af_guided_mr.crystallography.Refine import RefinementResult, AsyncRefinementManager
+from af_guided_mr.utils import utilities
 
-af_cluster_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "resources", "AF_cluster.py")
+af_cluster_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "structure_prediction", "AF_cluster.py")
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Molecular replacement for multi-chain protein complexes using protein sequences and X-ray diffraction data.")
-    parser.add_argument("--csv_path", type=str, required=True, help="Path to the input CSV file containing protein sequences for each chain.")
-    parser.add_argument("--mtz_path", type=str, required=True, help="Path to the input MTZ file containing reduced X-ray diffraction data.")
-    parser.add_argument("--uniprot_ids", type=str, required=False, help="Comma-separated UniProt IDs corresponding to the order of sequences in the CSV file.")
-    parser.add_argument("--copy_numbers", type=str, required=False, help="Collon-separated copy numbers corresponding to the order of sequences in the CSV file.")
-    parser.add_argument("--solvent_content", type=float, required=False, help="Solvent content of the crystal (default: 0.5).")
-    parser.add_argument("--output_path", type=str, required=False, help="Base directory for all output files. If not specified, uses the current directory.")
-    parser.add_argument("--nproc", type=int, required=False, default=4, help="Number of processors to use (default: 4).")
-    parser.add_argument("--no_timeout", action="store_true", help="Disable the 30 minutes timeout for the phaser run.")
-    parser.add_argument("--force_af_cluster", action="store_true", help="Force running AF_cluster.py even if the output directory already exists, or for those shorter than 50 residue sequences.")
-    parser.add_argument("--skip_af_cluster", action="store_true", help="Skip running AF_cluster.py, while using the models from pre-existing AF_cluster runs.")
-    parser.add_argument('--skip_autobuild', action='store_true', help='Skip the autobuild process.')
-    parser.add_argument("--reference_model", type=str, required=False, help="Developing use: Path to the reference model for optional map-reference correlation.")
-    parser.add_argument("--reference_map", type=str, required=False, help="Developing use: Path to the reference map in mtz format for optional map-reference correlation.")
-    # ... include other existing arguments as required ...
-    return parser.parse_args()
-
-
-
-def main():
+def run_pipeline(args):
     start_time = time.time()
     sequence_manager = SequenceManager()
     pdb_manager = PDBManager()
@@ -79,7 +59,6 @@ def main():
         protein_info[sequence_id]["mr_models"][f"mr_model_path_{domain_recognition_method}_mode"] = processed_ensemble_paths
 
     
-    args = parse_args()
     # Resolve output directory to an absolute path
     if args.output_path:
         output_root = os.path.abspath(args.output_path)
@@ -1655,6 +1634,3 @@ def main():
     )
 
     utilities.create_clean_log_copy()
-
-if __name__ == "__main__":
-    main()

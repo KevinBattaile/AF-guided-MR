@@ -10,7 +10,7 @@ from Bio.PDB import PDBParser, PDBIO, Chain
 from itertools import groupby
 from mmtbx.pdbtools import modify, master_params
 from pathlib import Path
-from SequenceManager import SequenceManager
+from af_guided_mr.data_management.SequenceManager import SequenceManager
 
 seq_manager = SequenceManager()
 

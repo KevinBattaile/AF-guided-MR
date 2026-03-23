@@ -13,14 +13,14 @@ from mmtbx.scaling.twin_analyses import get_twin_laws
 from collections import defaultdict
 import io
 import sys
-import PDBManager
+from af_guided_mr.data_management import PDBManager
 
-from utilities import get_available_cores
+from af_guided_mr.utils.utilities import get_available_cores
 
 class MolecularReplacement:
     def __init__(self, pdb_manager, logger=None):
         self.logger = logger if logger else logging.getLogger(__name__)
-        self.pdb_manager = PDBManager.PDBManager()
+        self.pdb_manager = pdb_manager
         self.terminate_flag = False  # Add class-level termination flag
 
     def terminate_current_run(self):

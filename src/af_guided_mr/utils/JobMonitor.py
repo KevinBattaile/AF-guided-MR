@@ -6,7 +6,7 @@ import time
 import logging
 import psutil
 import json
-from utilities import get_cpu_usage
+from af_guided_mr.utils.utilities import get_cpu_usage
 
 
 class JobMonitor:
