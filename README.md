@@ -70,7 +70,7 @@ afmr --csv_path your_protein_sequence.csv --mtz_path your_xray_data.mtz
 Run `python run_afmr.py -h` for a full list of available options and flags.
 
 ### How It Works Under the Hood
-The script will invoke `AF_cluster.py` to cluster the MSA from ColabFold and sort the resulting structures according to their RMSD to the top-ranked ColabFold model. This ensures that when Phaser runs on these models, it always tests with the order of high RMSD first. 
+The script will invoke `AF_cluster.py` to cluster the MSA from ColabFold and sort the resulting structures according to their RMSD to the top-ranked ColabFold model. This ensures that when Phaser runs on these models, it always tests with the order of high RMSD first.
 
 *Credit: The AF_cluster script draws upon the fabulous work done by the authors of the original AF_Cluster project ([https://github.com/HWaymentSteele/AF_Cluster](https://github.com/HWaymentSteele/AF_Cluster)). A modified version is included here to focus on DBSCAN clustering of the MSA from ColabFold and subsequent model sorting.*
 

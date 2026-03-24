@@ -9,7 +9,7 @@ class ColabFold:
     def __init__(self) -> None:
         pass
 
-    def run_colabfold(self, input_csv, output_dir, num_models=1, num_recycle=5, amber=True, use_gpu_relax=True):
+    def run_colabfold(self, input_fasta, output_dir, num_models=1, num_recycle=5, amber=True, use_gpu_relax=False):
         # device_id = wait_for_available_gpu()
 
         # # Set the CUDA_VISIBLE_DEVICES environment variable
@@ -22,7 +22,7 @@ class ColabFold:
             "colabfold_batch",
             "--num-models", str(num_models),
             "--num-recycle", str(num_recycle),
-            input_csv,
+            input_fasta,
             output_dir,
         ]
         if amber:
@@ -30,4 +30,7 @@ class ColabFold:
         if use_gpu_relax:
             colabfold_command.append("--use-gpu-relax")
 
-        subprocess.run(colabfold_command, check=True, env=os.environ.copy())
+        colabfold_env = os.environ.copy()
+        colabfold_env["MPLBACKEND"] = "Agg"
+
+        subprocess.run(colabfold_command, check=True, env=colabfold_env)
