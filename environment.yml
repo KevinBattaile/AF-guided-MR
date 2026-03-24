@@ -2,9 +2,9 @@ name: automatemr
 channels:
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   - python=3.10
+  # --- Heavy Scientific Binaries & C++ Extensions ---
   - cuda-nvcc
   - openmm
   - pdbfixer
@@ -12,18 +12,19 @@ dependencies:
   - hhsuite
   - cctbx-base
   - pycuda
-  - nvidia-ml-py3
-  - gemmi
-  - mdtraj
-  - polyleven
-  - pandarallel
-  - scikit-learn
-  - hdbscan
-  - colorama
-  - biopython
-  - psutil
   - pip
+  # --- Standard Python & Tricky Packages ---
   - pip:
+      - nvidia-ml-py3
+      - gemmi
+      - mdtraj
+      - polyleven
+      - pandarallel
+      - scikit-learn
+      - hdbscan
+      - colorama
+      - biopython
+      - psutil
       - --extra-index-url https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
       - jax[cuda12]==0.5.3
       - "colabfold[alphafold-minus-jax] @ git+https://github.com/sokrypton/ColabFold"

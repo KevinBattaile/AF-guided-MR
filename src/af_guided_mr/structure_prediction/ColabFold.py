@@ -30,4 +30,7 @@ class ColabFold:
         if use_gpu_relax:
             colabfold_command.append("--use-gpu-relax")
 
-        subprocess.run(colabfold_command, check=True, env=os.environ.copy())
+        colabfold_env = os.environ.copy()
+        colabfold_env["MPLBACKEND"] = "Agg"
+
+        subprocess.run(colabfold_command, check=True, env=colabfold_env)
