@@ -1,88 +1,60 @@
-# AF-guided MR
+# AF-guided-MR (AlphaFold-Guided Molecular Replacement)
 
-A Python-based tool that automates molecular replacement using protein sequences and x-ray diffraction data, designed especially to handle difficult cases.
+A robust, fully automated pipeline that bridges the gap between AI structure prediction and X-ray crystallography. AF-guided-MR seamlessly orchestrates ColabFold model generation, Phaser molecular replacement, and Phenix AutoBuild/Refinement to solve crystal structures from sequence and reflection data.
 
-This tool uses protein sequences and reduced x-ray diffraction data to automate the process of molecular replacement. It leverages the power of ColabFold for initial structure prediction and Phaser for MR based on various predefined modes. For high-resolution cases better than 3.5 angstroms, it uses AutoBuild to enhance and build the model. For low-resolution cases worse than 3.5 angstroms, it uses phenix.refine to run default refinement cycles for a brief and quick assessment of the molecular replacement correctness. It is specifically designed to handle difficult cases where the predicted structure varies significantly from the final solution.
+## Features & Recent Upgrades
+* **Native FASTA Support:** Simply provide a standard `.fasta` file. The pipeline automatically calculates sequence lengths and Matthews coefficients without requiring cumbersome CSV conversions.
+* **Smart MTZ Column Sniffing:** Powered by `gemmi`, the pipeline preemptively scans your MTZ file and automatically selects the highest-priority data arrays (e.g., autoPROC `F_osf`, `SA_F`, or standard `IMEAN`). No more "Multiple equally suitable arrays" crashes from Phenix!
+* **Automated Fallbacks:** Includes built-in safeguards for headless server environments (headless matplotlib) and automatic fallbacks to CPU-relax if GPU memory limits are hit during ColabFold prediction.
+* **Customizable AutoBuild:** Take control of the refinement process with toggles like `--no_waters` to prevent premature solvent placement.
 
-## Getting Started
+## Prerequisites & Installation
 
-### Prerequisites
+Ensure you have your Conda/Mamba environment set up with the required dependencies, and that your Phenix environment is sourced.
 
-You will need the following installed on a Linux machine with an Nvidia GPU (CUDA 12) to run the software:
-
-* **Conda** (or **Mamba**, which is highly recommended for faster dependency resolution)
-* **PHENIX** (Python-based Hierarchical ENvironment for Integrated Xtallography) ([https://www.phenix-online.org/](https://www.phenix-online.org/))
-* **Nvidia GPU Drivers** with CUDA 12 support.
-
-### Installation
-
-The installation process has been streamlined to use a single Conda environment file that resolves all complex dependencies, including JAX, ColabFold, and the necessary C++ extensions.
-
-#### 1. Install PHENIX
-Follow the [official PHENIX installation guide](https://www.phenix-online.org/download/) for detailed instructions. The installation process is straightforward and should be completed within a few minutes.
-
-#### 2. Clone the Repository
-Download the AF-guided-MR code to your local machine:
-```bash
-git clone [https://github.com/KevinBattaile/AF-guided-MR](https://github.com/KevinBattaile/AF-guided-MR)
-cd AF-guided-MR
-```
-
-#### 3. Build the Conda Environment
-Use `mamba` (or `conda`) to provision the complete environment. This will automatically install Python 3.10, the CUDA toolkit, ColabFold, and all necessary scientific libraries.
-```bash
-mamba env create -f environment.yml
-```
-
-#### 4. Activate the Environment
-```bash
-conda activate automatemr
-```
-
-*Note on Execution:* The software runs directly from the cloned repository using a wrapper script (`run_afmr.py`). There is no need to run `pip install` on the codebase itself.
+Dependencies include:
+* `colabfold_batch`
+* `phenix` (Tested on 2.0+ branch)
+* `gemmi`
+* `biopython`
 
 ## Usage
 
-Ensure your `automatemr` conda environment is active. You can execute the pipeline by pointing your Python interpreter to the `run_afmr.py` script located at the root of the repository.
+Run the pipeline using the main entry point `run_afmr.py`. 
 
 ### Basic Command:
-```bash
-python run_afmr.py --csv_path your_protein_sequence.csv --mtz_path your_xray_data.mtz --uniprot_id P12345,P23456 --copy_numbers 2:2 --nproc 8
-```
 
-### Convenience Setup (Optional):
-If you prefer not to type `python /path/to/run_afmr.py` every time, you can make the script executable and add an alias to your `~/.bashrc` or `~/.bash_aliases`:
-```bash
-chmod +x run_afmr.py
-alias afmr='/absolute/path/to/AF-guided-MR/run_afmr.py'
-```
-You can then run the software from any directory using:
-```bash
-afmr --csv_path your_protein_sequence.csv --mtz_path your_xray_data.mtz
-```
+    python run_afmr.py \
+      --fasta_path /path/to/your/sequence.fasta \
+      --mtz_path /path/to/your/data.mtz \
+      --uniprot_id TARGET_ID \
+      --nproc 8 
 
-### Inputs
-* `--csv_path`: The protein sequence in a CSV format following the ColabFold instructions (`id,sequence`).
-* `--mtz_path`: The path to your reduced x-ray diffraction data.
-* `--uniprot_id`: (Optional, highly recommended) The UniProt ID(s) for the protein components.
-* `--copy_numbers`: (Optional, highly recommended) The copy numbers for the components you wish to search.
+### Advanced Command (Skipping Waters):
 
-Run `python run_afmr.py -h` for a full list of available options and flags.
+    python run_afmr.py \
+      --fasta_path /path/to/your/sequence.fasta \
+      --mtz_path /path/to/your/data.mtz \
+      --uniprot_id TARGET_ID \
+      --nproc 8 \
+      --no_waters
 
-### How It Works Under the Hood
-The script will invoke `AF_cluster.py` to cluster the MSA from ColabFold and sort the resulting structures according to their RMSD to the top-ranked ColabFold model. This ensures that when Phaser runs on these models, it always tests with the order of high RMSD first. 
+## Command Line Arguments
 
-*Credit: The AF_cluster script draws upon the fabulous work done by the authors of the original AF_Cluster project ([https://github.com/HWaymentSteele/AF_Cluster](https://github.com/HWaymentSteele/AF_Cluster)). A modified version is included here to focus on DBSCAN clustering of the MSA from ColabFold and subsequent model sorting.*
+| Argument | Description |
+| :--- | :--- |
+| `--fasta_path` | **(Required)** Path to the input `.fasta` file containing your protein sequence(s). |
+| `--mtz_path` | **(Required)** Path to the unphased reflection data `.mtz` file. |
+| `--uniprot_id` | **(Required)** Target identifier used for naming output files and tracking. |
+| `--nproc` | Number of processors to use for parallelized steps (default: 4). |
+| `--no_waters` | **(Optional)** Flag to explicitly disable water placement during the Phenix AutoBuild step. |
 
-## webUI
-A web-based user interface is under development to provide a more user-friendly experience. It will be available soon.
+## Pipeline Workflow
 
-## Note & Benchmarks
-This tool has been benchmarked on 372 PDB entries that are deemed hard problems for MR and has shown a 93% success rate at identifying the right solution (R-factors for AutoBuild/refine in a reasonable range), or a 96% success rate at finding a significant solution that requires further human evaluation. It is not a replacement for human evaluation; however, it is a proper tool to greatly speed up the process of MR.
+1. **Structure Prediction:** Uses `colabfold_batch` to generate high-accuracy multimer models from your FASTA sequence.
+2. **Domain Parsing:** Evaluates the predicted models and prepares them for MR.
+3. **Molecular Replacement:** Calculates the Matthews coefficient and runs `phaser` to place the models into the asymmetric unit.
+4. **AutoBuild & Refinement:** Orchestrates `phenix.autobuild` and `phenix.refine` to rebuild missing regions, apply density modifications, and calculate final R-work/R-free and map-model correlation statistics.
 
-The full tested entry list is available at `resources/tested_cases.txt`. Full test case results are available upon request due to size constraints.
-
-If you experience difficulty with the tool or want to try your case without the full installation process, feel free to contact: `af.guided.mr at gmail.com`.
-
-## License
-MIT License.
+## Coming Soon
+* **Interactive WebUI:** A Gradio-based graphical interface for users who prefer a point-and-click experience over the command line.
