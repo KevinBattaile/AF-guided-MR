@@ -309,7 +309,7 @@ def rfactors_from_phenix_refine(pdb_path, data_path, refine_output_root, nproc):
         "output.write_geo_file=False",
     ]
     if selected_data_labels:
-        phenix_refine_cmd.append(f"xray_data.labels={selected_data_labels}")
+        phenix_refine_cmd.append(f"miller_array.labels.name={selected_data_labels}")
 
     def run_phenix_refine(cmd):
         formatted_cmd = " ".join(cmd)
