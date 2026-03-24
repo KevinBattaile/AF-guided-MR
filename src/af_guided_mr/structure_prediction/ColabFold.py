@@ -9,7 +9,7 @@ class ColabFold:
     def __init__(self) -> None:
         pass
 
-    def run_colabfold(self, input_csv, output_dir, num_models=1, num_recycle=5, amber=True, use_gpu_relax=True):
+    def run_colabfold(self, input_csv, output_dir, num_models=1, num_recycle=5, amber=True, use_gpu_relax=False):
         # device_id = wait_for_available_gpu()
 
         # # Set the CUDA_VISIBLE_DEVICES environment variable
