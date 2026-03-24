@@ -15,7 +15,7 @@ import io
 import sys
 from af_guided_mr.data_management import PDBManager
 
-from af_guided_mr.utils.utilities import get_available_cores
+from af_guided_mr.utils.utilities import get_available_cores, get_mtz_labels
 
 class MolecularReplacement:
     def __init__(self, pdb_manager, logger=None):
@@ -452,10 +452,14 @@ class MolecularReplacement:
             print(f"Warning: Could not get available cores: {e}. Using provided nproc value.")
             final_nproc = nproc
 
+        selected_data_labels, selected_free_r_label = get_mtz_labels(hklin)
+
         with open(params_filename, "w") as f:
             f.write("phaser {\n")
             f.write("  mode = MR_AUTO\n")
             f.write(f"  hklin = {hklin}\n")
+            if selected_data_labels:
+                f.write(f"  labin = {selected_data_labels}\n")
             f.write(f"  composition.solvent = {solvent_content}\n")
             f.write(f"  crystal_symmetry.space_group = \"{space_group}\"\n")
             # Update phaser_info with ensemble details
@@ -560,10 +564,14 @@ class MolecularReplacement:
             return None, None, found_copies  # Return found_copies even if no suitable second combination
 
     def generate_phaser_params_for_second_run(self, params_filename, hklin, updated_solvent_content, space_group, partial_pdb_path, processed_models, missing_copies, phaser_info, nproc):
+        selected_data_labels, selected_free_r_label = get_mtz_labels(hklin)
+
         with open(params_filename, "w") as f:
             f.write("phaser {\n")
             f.write("  mode = MR_AUTO\n")
             f.write(f"  hklin = {hklin}\n")
+            if selected_data_labels:
+                f.write(f"  labin = {selected_data_labels}\n")
             f.write(f"  composition.solvent = {updated_solvent_content}\n")
             f.write(f"  crystal_symmetry.space_group = \"{space_group}\"\n")
 

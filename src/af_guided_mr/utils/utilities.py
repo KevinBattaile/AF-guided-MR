@@ -9,6 +9,7 @@ import numpy as np
 import glob
 import nvidia_smi
 import psutil
+import gemmi
 
 class CustomFormatter(logging.Formatter):
     def format(self, record):
@@ -288,6 +289,9 @@ def rfactors_from_phenix_refine(pdb_path, data_path, refine_output_root, nproc):
     if os.path.exists(os.path.join(refine_output_root, "refinement_data.mtz")):
         data_path = os.path.join(refine_output_root, "refinement_data.mtz")
 
+    # Preemptively determine data labels
+    selected_data_labels, selected_free_r_label = get_mtz_labels(data_path)
+
     # Initialize the phenix_refine_cmd with base parameters
     phenix_refine_cmd = [
         "phenix.refine",
@@ -304,6 +308,8 @@ def rfactors_from_phenix_refine(pdb_path, data_path, refine_output_root, nproc):
         "output.write_def_file=False",
         "output.write_geo_file=False",
     ]
+    if selected_data_labels:
+        phenix_refine_cmd.append(f"refinement.input.xray_data.labels={selected_data_labels}")
 
     def run_phenix_refine(cmd):
         formatted_cmd = " ".join(cmd)
@@ -330,18 +336,6 @@ def rfactors_from_phenix_refine(pdb_path, data_path, refine_output_root, nproc):
 
         # Check for errors and adjust the command accordingly
         combined_output = stdout + stderr
-
-        if ("Multiple equally suitable arrays of observed xray data found" in combined_output) and ('multiple_arrays' not in fixed_errors):
-            logging.warning("Multiple equally suitable arrays of observed X-ray data found. Extracting the first possible choice.")
-            match = re.search(r'Possible choices:\s*(.*)', combined_output, re.DOTALL)
-            if match:
-                first_choice = match.group(1).split('\n')[0].strip()
-                phenix_refine_cmd.append(f"refinement.input.xray_data.labels={first_choice}")
-                fixed_errors.add('multiple_arrays')
-                re_run = True
-            else:
-                logging.error("Could not extract array choice.")
-                raise RuntimeError("Phenix refine failed due to multiple arrays issue.")
 
         if ("Atoms at special positions are within rigid groups" in combined_output) and ('atoms_special_positions' not in fixed_errors):
             logging.warning("Atoms at special positions are within rigid groups. Changing strategy to individual_sites+individual_adp and adding --overwrite.")
@@ -490,3 +484,39 @@ def calculate_map_model_correlation(pdb_file, data_file, map_file, solvent_conte
         logging.error(f"An error occurred during map-model/map correlation calculation: {e}")
 
     return correlation_value
+
+def get_mtz_labels(mtz_path):
+    """
+    Scans MTZ file to preemptively select the best amplitude/intensity and Free R flag columns.
+    Excludes SA_flag to prevent ambiguous array issues in Phenix.
+    """
+    mtz = gemmi.read_mtz(mtz_path)
+    columns = [col.label for col in mtz.columns]
+
+    # Priorities for Data labels
+    priorities = [
+        ("IMEAN", "SIGIMEAN"),
+        ("I", "SIGI"),
+        ("F", "SIGF"),
+    ]
+
+    selected_data_labels = None
+    for prio in priorities:
+        if prio[0] in columns and prio[1] in columns:
+            selected_data_labels = f"{prio[0]},{prio[1]}"
+            break
+
+    # Priorities for Free R labels
+    free_r_priorities = ["FreeR_flag", "R-free-flags", "FREE"]
+    selected_free_r_label = None
+    for prio in free_r_priorities:
+        if prio in columns and prio != "SA_flag":
+            selected_free_r_label = prio
+            break
+
+    if selected_data_labels is None:
+        logging.warning("Could not find suitable data labels in MTZ file. Refinement may fail.")
+    if selected_free_r_label is None:
+        logging.warning("Could not find suitable Free R label in MTZ file. Refinement may fail.")
+
+    return selected_data_labels, selected_free_r_label

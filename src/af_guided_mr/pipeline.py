@@ -68,8 +68,8 @@ def run_pipeline(args):
     utilities.setup_custom_logger(output_root)        
     protein_info = {}
 
-    # Read sequences and UniProt IDs from CSV
-    sequences = sequence_manager.read_sequences_from_csv(args.csv_path)
+    # Read sequences and UniProt IDs from FASTA
+    sequences = sequence_manager.read_sequences_from_fasta(args.fasta_path)
     uniprot_ids = args.uniprot_ids.split(',') if args.uniprot_ids else []
     print(f"Processing {len(sequences)} sequences...")
     print(f"Sequences: {sequences}")
@@ -326,7 +326,7 @@ def run_pipeline(args):
         copy_numbers_list = args.copy_numbers.split(':')
         # sequence_ids = list(protein_info.keys())  # Extract sequence IDs from protein_info dictionary
         if len(copy_numbers_list) != len(sequence_ids):
-            logging.error("Number of specified copy numbers does not match the number of sequences in the CSV file.")
+            logging.error("Number of specified copy numbers does not match the number of sequences in the FASTA file.")
             sys.exit(1)
         specified_copy_numbers = {sequence_id: int(copy_num) for sequence_id, copy_num in zip(sequence_ids, copy_numbers_list)}
     else:
@@ -336,7 +336,7 @@ def run_pipeline(args):
 
     # Call the modified function
     closest_combination, all_combinations, mean_matthews_coeff = molecular_replacement.multi_analyze_asu_and_solvent_content(
-        args.mtz_path, args.csv_path, sequence_ids, specified_copy_numbers
+        args.mtz_path, args.fasta_path, sequence_ids, specified_copy_numbers
     )
     
     # Analyze ASU and find the number of copies for each sequence and solvent content
@@ -1466,9 +1466,11 @@ def run_pipeline(args):
             "use_hl_if_present=False",
             f"nproc={args.nproc}",
             "thoroughness.ncycle_refine=5",
-            # "refinement.place_waters=False", # comment out to prohibit water placement
             # "general.clean_up=True" # remove the TEMP folder when finished
         ]
+
+        if args.no_waters:
+            phenix_autobuild_cmd.append("refinement.place_waters=False")
 
         if os.path.exists(successful_phaser_map):
             phenix_autobuild_cmd.append(f"input_map_file={successful_phaser_map}")

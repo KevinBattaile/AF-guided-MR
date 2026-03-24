@@ -5,6 +5,7 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.Align import MultipleSeqAlignment
 from Bio.Blast import NCBIWWW, NCBIXML
+from Bio import SeqIO
 from multiprocessing import Process, Queue
 import logging
 
@@ -165,21 +166,15 @@ class SequenceManager:
     """
     the following part is for multiple sequences input cases
     """
-    def read_sequences_from_csv(self, csv_path):
+    def read_sequences_from_fasta(self, fasta_path):
         sequences = []
         try:
-            with open(csv_path, 'r') as csvfile:
-                reader = csv.reader(csvfile)
-                header = next(reader)
-                if header[:2] != ['id', 'sequence']:
-                    raise ValueError("CSV header should start with 'id,sequence'")
-                for row in reader:
-                    if len(row) < 2:
-                        raise ValueError("Each row in CSV must have at least 2 elements: 'id' and 'sequence'")
-                    structure_id, sequence = row[:2]  # Only read the first two elements
-                    sequences.append((structure_id, sequence))
+            for record in SeqIO.parse(fasta_path, "fasta"):
+                sequences.append((record.id, str(record.seq)))
+            if not sequences:
+                raise ValueError("No sequences found in the provided FASTA file.")
         except Exception as e:
-            self.logger.error(f"Error in read_sequences_from_csv: {e}")
+            self.logger.error(f"Error in read_sequences_from_fasta: {e}")
             return None
 
         return sequences
