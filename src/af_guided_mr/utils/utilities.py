@@ -192,10 +192,14 @@ def extract_rfactors(sub_folder_path):
         try:
             with open(autobuild_log_path, 'r') as file:
                 lines = file.read()
-                log_refine_path = re.search(r"log_refine: (.+\.log_refine)", lines).group(1)
-                return log_refine_path
+                match = re.search(r"log_refine: (.+\.log_refine)", lines)
+                if match:
+                    return match.group(1)
+                else:
+                    logging.warning(f"Could not find 'log_refine' path in {autobuild_log_path}")
+                    return None
         except Exception as e:
-            print(f"Error finding refinement log file in {autobuild_log_path}: {e}")
+            logging.error(f"Error finding refinement log file in {autobuild_log_path}: {e}")
             return None
 
     def extract_rfactors_from_refinement_log(log_file_path):
@@ -467,7 +471,8 @@ def calculate_map_model_correlation(pdb_file, data_file, map_file, solvent_conte
                         correlation_value = float(line.split()[-1])
                         break
 
-        if (reference_pdb is None and reference_map is not None) or not os.path.exists(cc_log_path):
+    # Only attempt the MTZ-to-MTZ correlation if a reference map was actually provided
+        if reference_map is not None and (reference_pdb is None or not os.path.exists(cc_log_path)):
             """this is for cc calculation using reference map, in case the reference pdb is not available,
             or for unknown reason the cc.log file is not generated"""
             get_cc_command = f"phenix.get_cc_mtz_mtz mtz_1={map_file} mtz_2={reference_map} output_dir={output_dir}"
@@ -479,6 +484,7 @@ def calculate_map_model_correlation(pdb_file, data_file, map_file, solvent_conte
                         if line.startswith("Final CC of maps:"):
                             correlation_value = float(line.split()[-1])
                             break
+
     except Exception as e:
         # Log the exception if needed
         logging.error(f"An error occurred during map-model/map correlation calculation: {e}")
