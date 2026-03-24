@@ -490,7 +490,7 @@ def get_mtz_labels(mtz_path):
     Scans MTZ file to preemptively select the best amplitude/intensity and Free R flag columns.
     Excludes SA_flag to prevent ambiguous array issues in Phenix.
     """
-    mtz = gemmi.read_mtz(mtz_path)
+    mtz = gemmi.read_mtz_file(mtz_path)
     columns = [col.label for col in mtz.columns]
 
     # Priorities for Data labels
