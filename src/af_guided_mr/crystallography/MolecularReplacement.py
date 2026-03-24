@@ -298,13 +298,12 @@ class MolecularReplacement:
             return space_groups.get(space_group_number, 2.69)  # Default to general mean if not found
 
 
-        def read_protein_sequences(csv_file):
+        def read_protein_sequences(fasta_file):
+            """Reads a FASTA file and returns a dictionary of sequence IDs to lengths."""
+            from Bio import SeqIO
             proteins = {}
-            with open(csv_file, 'r') as file:
-                reader = csv.DictReader(file)
-                for row in reader:
-                    proteins[row['id']] = len(row['sequence'])
-                    print(f"Protein {row['id']} has {len(row['sequence'])} residues.")
+            for record in SeqIO.parse(fasta_file, "fasta"):
+                proteins[record.id] = len(record.seq)
             return proteins
 
         def estimate_amino_acid_range(mtz_file):
