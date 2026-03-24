@@ -291,7 +291,7 @@ def rfactors_from_phenix_refine(pdb_path, data_path, refine_output_root, nproc):
         data_path,
         "strategy=rigid_body+individual_sites+individual_adp",
         "main.number_of_macro_cycles=8",
-        f"nproc={nproc}",
+        f"main.nproc={nproc}",
         "tncs_correction=True",
         "ncs_search.enabled=True",
         "pdb_interpretation.allow_polymer_cross_special_position=True",
