@@ -4,7 +4,7 @@ A robust, fully automated pipeline that bridges the gap between AI structure pre
 
 ## Features & Recent Upgrades
 * **Native FASTA Support:** Simply provide a standard `.fasta` file. The pipeline automatically calculates sequence lengths and Matthews coefficients without requiring cumbersome CSV conversions.
-* **Smart MTZ Column Sniffing:** Powered by `gemmi`, the pipeline preemptively scans your MTZ file and automatically selects the highest-priority data arrays (e.g., autoPROC `F_osf`, `SA_F`, or standard `IMEAN`). No more "Multiple equally suitable arrays" crashes from Phenix!
+* **Smart MTZ Column Sniffing:** Powered by `gemmi`, the pipeline preemptively scans your MTZ file and automatically selects data arrays. 
 * **Automated Fallbacks:** Includes built-in safeguards for headless server environments (headless matplotlib) and automatic fallbacks to CPU-relax if GPU memory limits are hit during ColabFold prediction.
 * **Customizable AutoBuild:** Take control of the refinement process with toggles like `--no_waters` to prevent premature solvent placement.
 
