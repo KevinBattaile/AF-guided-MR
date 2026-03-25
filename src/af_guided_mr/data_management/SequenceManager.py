@@ -170,7 +170,9 @@ class SequenceManager:
         sequences = []
         try:
             for record in SeqIO.parse(fasta_path, "fasta"):
-                sequences.append((record.id, str(record.seq)))
+                # Biopython already removes spaces, we just need to chop off the pipe
+                clean_id = record.id.split('|')[0]
+                sequences.append((clean.id, str(record.seq)))
             if not sequences:
                 raise ValueError("No sequences found in the provided FASTA file.")
         except Exception as e:
