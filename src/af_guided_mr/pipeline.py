@@ -214,11 +214,18 @@ def run_pipeline(args):
             logging.info(f"ColabFold finished for sequence {sequence_id}.")
         else:
             logging.info(f"ColabFold already run for sequence {sequence_id}. Skipping...")
-        colabfold_model_files = glob.glob(f"{output_dir}/{sequence_id}_relaxed_rank_001*seed_000.pdb")
-        colabfold_model_path = colabfold_model_files[0] if colabfold_model_files[0] else None
-        colabfold_pae_json_path = glob.glob(f"{output_dir}/{sequence_id}*predicted_aligned_error_v1.json")[0] if glob.glob(f"{output_dir}/{sequence_id}*predicted_aligned_error_v1.json")[0] else None
+        # ColabFold swaps pipes for underscores in file names, so we must sanitize the ID for the search
+        safe_sequence_id = sequence_id.replace("|", "_")
+
+        colabfold_model_files = glob.glob(f"{output_dir}/{safe_sequence_id}_relaxed_rank_001*seed_000.pdb")
+        colabfold_model_path = colabfold_model_files[0] if colabfold_model_files else None
+        
+        pae_files = glob.glob(f"{output_dir}/{safe_sequence_id}*predicted_aligned_error_v1.json")
+        colabfold_pae_json_path = pae_files[0] if pae_files else None
+        
         protein_info[sequence_id]["cf"]["colabfold_model_path"] = colabfold_model_path
-        colabfold_msa = f"{output_dir}/{sequence_id}.a3m" if f"{output_dir}/{sequence_id}.a3m" else None
+        
+        colabfold_msa = f"{output_dir}/{safe_sequence_id}.a3m"
         protein_info[sequence_id]["cf"]["colabfold_msa"] = colabfold_msa
         
         colabfold_marker = False
