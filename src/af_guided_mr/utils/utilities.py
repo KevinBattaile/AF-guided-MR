@@ -29,6 +29,9 @@ def setup_custom_logger(dir):
 
     log_format = '%(asctime)s - %(levelname)s - %(message)s'
     formatter = CustomFormatter(log_format, datefmt='%Y-%m-%d %H:%M:%S')
+    
+    # Force the directory to exist (does nothing if it already exists)
+    os.makedirs(dir, exist_ok=True)
 
     file_handler = logging.FileHandler(os.path.join(dir, 'automated_structure_solvation.log'))
     file_handler.setFormatter(formatter)
