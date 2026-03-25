@@ -197,7 +197,7 @@ def extract_rfactors(sub_folder_path):
                 if match:
                     return match.group(1)
                 else:
-                    logging.warning(f"Could not find 'log_refine' path in {autobuild_log_path}")
+                    logging.debug(f"Could not find 'log_refine' path in {autobuild_log_path}. Falling back to main log.")
                     return None
         except Exception as e:
             logging.error(f"Error finding refinement log file in {autobuild_log_path}: {e}")
@@ -444,26 +444,25 @@ def calculate_map_model_correlation(pdb_file, data_file, map_file, solvent_conte
 
         # Run phenix.get_cc_mtz_pdb to calculate correlation
         try:
-            if reference_pdb is None and reference_map is None: # this is for phaser pdb or autobuild/refinement pdb
-                get_cc_command = f"phenix.get_cc_mtz_pdb {map_file} {pdb_file} output_dir={output_dir}"
-                # logging.info(f"Correlation calculation command step 4: {get_cc_command}") # development purpose logging
-                subprocess.run(get_cc_command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            elif reference_pdb is not None: # this is for regular cc calculation using reference pdb
-                get_cc_command = f"phenix.get_cc_mtz_pdb {map_file} {reference_pdb} output_dir={output_dir}"
-                # logging.info(f"Correlation calculation command step 4: {get_cc_command}") # development purpose logging
-                subprocess.run(get_cc_command, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # Determine which PDB to use
+            target_pdb = reference_pdb if reference_pdb is not None else pdb_file
+            
+            # Form the modern Phenix 2.0 command
+            get_cc_command = f"phenix.map_correlations {map_file} {target_pdb}"
+            
+            # Run the command and capture the output directly from the terminal
+            result = subprocess.run(get_cc_command, shell=True, check=True, capture_output=True, text=True)
+            
+            # Scan the terminal output for the CC_mask value
+            for line in result.stdout.split('\n'):
+                if "CC_mask  :" in line:
+                    correlation_value = float(line.split(':')[-1].strip())
+                    break
+                    
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Phenix correlation calculation failed: {e.stderr}")
         except Exception as e:
-            # Log the exception if needed
-            logging.error(f"An error occurred during map-model correlation calculation: {e}")        
-
-        # Parse the cc.log file to extract the correlation value
-        cc_log_path = os.path.join(output_dir, "cc.log")
-        if os.path.exists(cc_log_path):
-            with open(cc_log_path, "r") as cc_log_file:
-                for line in cc_log_file:
-                    if line.startswith("  Overall map correlation:"):
-                        correlation_value = float(line.split()[-1])
-                        break
+            logging.error(f"An error occurred parsing map-model correlation: {e}")
 
     # Only attempt the MTZ-to-MTZ correlation if a reference map was actually provided
         if reference_map is not None and (reference_pdb is None or not os.path.exists(cc_log_path)):
