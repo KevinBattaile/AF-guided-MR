@@ -173,7 +173,7 @@ class SequenceManager:
             for record in SeqIO.parse(fasta_path, "fasta"):
                 # Keep alphanumeric, -, _ and . Replace everything else with _
                 clean_id = re.sub(r'[^a-zA-Z0-9_.-]', '_', record.id)
-                sequences.append((clean.id, str(record.seq)))
+                sequences.append((clean_id, str(record.seq)))
             if not sequences:
                 raise ValueError("No sequences found in the provided FASTA file.")
         except Exception as e:
