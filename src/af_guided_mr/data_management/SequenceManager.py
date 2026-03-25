@@ -8,6 +8,7 @@ from Bio.Blast import NCBIWWW, NCBIXML
 from Bio import SeqIO
 from multiprocessing import Process, Queue
 import logging
+import re
 
 class SequenceManager:
     def __init__(self, logger=None):
@@ -170,8 +171,8 @@ class SequenceManager:
         sequences = []
         try:
             for record in SeqIO.parse(fasta_path, "fasta"):
-                # Biopython already removes spaces, we just need to chop off the pipe
-                clean_id = record.id.split('|')[0]
+                # Keep alphanumeric, -, _ and . Replace everything else with _
+                clean_id = re.sub(r'[^a-zA-Z0-9_.-]', '_', record.id)
                 sequences.append((clean.id, str(record.seq)))
             if not sequences:
                 raise ValueError("No sequences found in the provided FASTA file.")
