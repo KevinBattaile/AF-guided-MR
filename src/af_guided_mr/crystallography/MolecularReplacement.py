@@ -393,6 +393,8 @@ class MolecularReplacement:
  
         
         proteins = read_protein_sequences(csv_file)
+        import re
+        proteins = {re.sub(r'[^a-zA-Z0-9_.-]', '_', k): v for k, v in proteins.items()}
         min_residues, max_residues, asu_volume, crystal_symmetry = estimate_amino_acid_range(mtz_file)
         mean_matthews_coeff, combinations, closest_combination = find_combinations(proteins, mtz_file, min_residues, max_residues)
 
