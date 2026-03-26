@@ -500,13 +500,22 @@ def get_mtz_labels(mtz_path):
         ("IMEAN", "SIGIMEAN"),
         ("I", "SIGI"),
         ("F", "SIGF"),
+        ("FP", "SIGFP"),
+        ("FP", None)
     ]
 
     selected_data_labels = None
     for prio in priorities:
-        if prio[0] in columns and prio[1] in columns:
-            selected_data_labels = f"{prio[0]},{prio[1]}"
-            break
+        # First, does the main measurement column exist?
+        if prio[0] in columns:
+            # If we explicitly set the second column to None, take just the first column
+            if prio[1] is None:
+                selected_data_labels = f"{prio[0]}"
+                break
+            # Otherwise, require the second column to exist too
+            elif prio[1] in columns:
+                selected_data_labels = f"{prio[0]},{prio[1]}"
+                break
 
     # Priorities for Free R labels
     free_r_priorities = ["FreeR_flag", "R-free-flags", "FREE"]
