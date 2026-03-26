@@ -501,19 +501,11 @@ def get_mtz_labels(mtz_path):
         ("I", "SIGI"),
         ("F", "SIGF"),
         ("FP", "SIGFP"),
-        ("FP", None)
     ]
 
     selected_data_labels = None
     for prio in priorities:
-        # First, does the main measurement column exist?
-        if prio[0] in columns:
-            # If we explicitly set the second column to None, take just the first column
-            if prio[1] is None:
-                selected_data_labels = f"{prio[0]}"
-                break
-            # Otherwise, require the second column to exist too
-            elif prio[1] in columns:
+        if prio[0] in columns and prio[1] in columns:
                 selected_data_labels = f"{prio[0]},{prio[1]}"
                 break
 

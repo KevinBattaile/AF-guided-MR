@@ -1,8 +1,30 @@
 import argparse
 import sys
 import os
+import logging
 
 from af_guided_mr.pipeline import run_pipeline
+
+def validate_args(args):
+    """Ensure all inputs are valid before starting the heavy pipeline."""
+    # 1. Check if files actually exist
+    if not os.path.isfile(args.fasta_path):
+        logging.error(f"FATAL: FASTA file not found at {args.fasta_path}")
+        sys.exit(1)
+        
+    if not os.path.isfile(args.mtz_path):
+        logging.error(f"FATAL: MTZ file not found at {args.mtz_path}")
+        sys.exit(1)
+        
+    # 2. Check if nproc is a valid number
+    if args.nproc is not None and args.nproc < 1:
+        logging.error(f"FATAL: Number of processors (--nproc) must be at least 1. Got {args.nproc}")
+        sys.exit(1)
+        
+    # 3. Prevent directory traversal bugs if UniProt IDs are provided
+    if args.uniprot_ids and ("/" in args.uniprot_ids or "\\" in args.uniprot_ids):
+        logging.error(f"FATAL: uniprot_ids cannot contain slashes. Got {args.uniprot_ids}")
+        sys.exit(1)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Molecular replacement for multi-chain protein complexes using protein sequences and X-ray diffraction data.")
@@ -24,6 +46,11 @@ def parse_args():
 
 def main():
     args = parse_args()
+    
+    # Run the safety checks before doing anything else
+    validate_args(args)
+    
+    # If it passes, run the pipeline
     run_pipeline(args)
 
 if __name__ == "__main__":
