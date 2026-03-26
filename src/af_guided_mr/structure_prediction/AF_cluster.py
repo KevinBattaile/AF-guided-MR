@@ -339,8 +339,12 @@ def run_colabfold(input_dir, output_dir, reference_pdb, num_recycle=5, num_model
         logger.info("Checking for available GPUs...")
         wait_for_available_gpu()
 
+        # Createa a copy of the environment and force Matplotlib to be headless
+        my_env = os.environ.copy()
+        my_env["MPLBACKEND"] = "Agg"
+
         # No need to set CUDA_VISIBLE_DEVICES here; it's already set in the environment
-        result = subprocess.run(command, capture_output=True, text=True, env=os.environ.copy())
+        result = subprocess.run(command, capture_output=True, text=True, env=my_env)
 
         if result.returncode != 0:
             logger.error(f"Error running ColabFold for {a3m_file}: {result.stderr}")
