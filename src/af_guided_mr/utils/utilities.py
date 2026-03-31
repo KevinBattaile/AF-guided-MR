@@ -314,6 +314,9 @@ def rfactors_from_phenix_refine(pdb_path, data_path, refine_output_root, nproc):
     if selected_data_labels:
         phenix_refine_cmd.append(f"miller_array.labels.name={selected_data_labels}")
 
+    if selected_free_r_label:
+        phenix_refine_cmd.append(f"miller_array.labels.name={selected_free_r_label}")
+
     def run_phenix_refine(cmd):
         formatted_cmd = " ".join(cmd)
         logging.info(f"Running Phenix refine with the following command into {refinement_folder}: {formatted_cmd}")
