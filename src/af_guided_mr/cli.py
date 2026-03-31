@@ -46,7 +46,19 @@ def parse_args():
 
 def main():
     args = parse_args()
-    
+
+    # Convert relative input paths to absolute paths
+    if args.fasta_path:
+        args.fasta_path = os.path.abspath(args.fasta_path)
+    if args.mtz_path:
+        args.mtz_path = os.path.abspath(args.mtz_path)
+    if args.output_path:
+        args.output_path = os.path.abspath(args.output_path)
+    if args.reference_model:
+        args.reference_model = os.path.abspath(args.reference_model)
+    if args.reference_map:
+        args.reference_map = os.path.abspath(args.reference_map)
+
     # Run the safety checks before doing anything else
     validate_args(args)
     
