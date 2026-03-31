@@ -22,12 +22,14 @@ Dependencies include:
 
 First, clone the code to your local machine or workstation:
 `git clone https://github.com/KevinBattaile/AF-guided-MR.git`
+
 `cd AF-guided-MR`
 
 ### 2. Set Up the Conda Environment
 
 Run:
 `conda env create -f environment.yml`
+
 `conda activate automatemr`
 
 ## Usage
