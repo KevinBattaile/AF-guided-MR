@@ -18,6 +18,18 @@ Dependencies include:
 * `gemmi`
 * `biopython`
 
+### 1. Clone the Repository
+
+First, clone the code to your local machine or workstation:
+`git clone https://github.com/KevinBattaile/AF-guided-MR.git`
+`cd AF-guided-MR`
+
+### 2. Set Up the Conda Environment
+
+If the `environment.yml` file is present in the repository, run:
+`conda env create -f environment.yml`
+`conda activate automatemr`
+
 ## Usage
 
 Run the pipeline using the main entry point `run_afmr.py`. 
