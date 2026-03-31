@@ -26,7 +26,7 @@ First, clone the code to your local machine or workstation:
 
 ### 2. Set Up the Conda Environment
 
-If the `environment.yml` file is present in the repository, run:
+Run:
 `conda env create -f environment.yml`
 `conda activate automatemr`
 
