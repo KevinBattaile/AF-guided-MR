@@ -57,7 +57,7 @@ Run the pipeline using the main entry point `run_afmr.py`.
 | :--- | :--- |
 | `--fasta_path` | **(Required)** Path to the input `.fasta` file containing your protein sequence(s). |
 | `--mtz_path` | **(Required)** Path to the unphased reflection data `.mtz` file. |
-| `--uniprot_id` | **(Required)** Target identifier used for naming output files and tracking. |
+| `--uniprot_id` | Target identifier used for naming output files and tracking. |
 | `--nproc` | Number of processors to use for parallelized steps (default: 4). |
 | `--no_waters` | **(Optional)** Flag to explicitly disable water placement during the Phenix AutoBuild step. |
 
