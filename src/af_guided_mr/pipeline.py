@@ -11,6 +11,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from Bio.PDB import PDBParser
 
+from af_guided_mr.crystallography.Autobuild import AutobuildManager
 from af_guided_mr.data_management.SequenceManager import SequenceManager
 from af_guided_mr.data_management.PDBManager import PDBManager
 from af_guided_mr.crystallography.MolecularReplacement import MolecularReplacement
@@ -1447,117 +1448,26 @@ def run_pipeline(args):
     # if the resolution is better than 3.5, then use phenix.autobuild to build the model
     if resolution < 3.5:
         logging.info("The resolution is better than 3.5, will use phenix.autobuild to build the model.")
-        
-        # autobuild_input_model = partial_pdb_path if any(total_missing_copies[protein_id] > 0 for protein_id in sequence_ids_over_50) else successful_phaser_output_pdb
         logging.info(f"autobuild_input_model: {autobuild_input_model}")
         logging.info(f"successful_phaser_map: {successful_phaser_map}")
-        master_fasta_filename = os.path.join(output_root, "master.fasta")
 
-        with open(master_fasta_filename, "w") as f:
-            for sequence_id, sequence in sequences:
-                f.write(f">{sequence_id}\n{sequence}\n")
-
-        autobuild_folder = os.path.join(output_root, "autobuild")
-        os.makedirs(autobuild_folder, exist_ok=True)
-        os.chdir(autobuild_folder)
-
-        phenix_autobuild_cmd = [
-            "phenix.autobuild", 
-            f"data={data_path}", 
-            autobuild_input_model, 
-            master_fasta_filename, 
-            "rebuild_in_place=False", 
-            "include_input_model=True", 
-            f"n_cycle_rebuild_max=10", 
-            f"crystal_info.solvent_fraction={solvent_content}", 
-            "use_hl_if_present=False",
-            f"nproc={args.nproc}",
-            "thoroughness.ncycle_refine=5",
-            # "general.clean_up=True" # remove the TEMP folder when finished
-        ]
-
-        if args.no_waters:
-            phenix_autobuild_cmd.append("refinement.place_waters=False")
-
-        if os.path.exists(successful_phaser_map):
-            phenix_autobuild_cmd.append(f"input_map_file={successful_phaser_map}")
-
-        formatted_cmd = ' '.join(phenix_autobuild_cmd)
-        logging.info("Formatted phenix_autobuild_cmd for shell execution:")
-        logging.info(formatted_cmd)
-
-        # Save the command to a file if --skip_autobuild is specified
-        if args.skip_autobuild:
-            with open(os.path.join(autobuild_folder, "AUTOBUILD_COMMAND.txt"), "w") as cmd_file:
-                cmd_file.write(formatted_cmd)
-            logging.info("Skipping autobuild process as --skip_autobuild is specified.")
-            if refinement_results:
-                r_work = best_result.r_work
-                r_free = best_result.r_free
-                r_factor_folder = best_result.refinement_folder
-            else:
-                r_work = None
-                r_free = None
-                r_factor_folder = None
-            cc_input_pdb = autobuild_input_model 
-            cc_input_map_coeffs = successful_phaser_map
-        else:
-            # Verify that none of the elements in the command are None
-            if any(elem is None for elem in phenix_autobuild_cmd):
-                raise ValueError("One or more elements in phenix_autobuild_cmd are None.")
-
-            phenix_autobuild_process = subprocess.Popen(phenix_autobuild_cmd)
-            autobuild_log_path = os.path.join(autobuild_folder, "AutoBuild_run_1_/AutoBuild_run_1_1.log")
-
-            main_autobuild_pid = phenix_autobuild_process.pid
-            
-            # Start tracking this autobuild run
-            job_monitor.start_autobuild_tracking(main_autobuild_pid, autobuild_folder)
-            
-            autobuild_log_path = os.path.join(autobuild_folder, "AutoBuild_run_1_/AutoBuild_run_1_1.log")
-            
-            # Update subjob PIDs periodically
-            def update_tracking():
-                while phenix_autobuild_process.poll() is None:
-                    job_monitor.update_subjob_pids()
-                    time.sleep(60)
-                    
-            tracking_thread = threading.Thread(target=update_tracking)
-            tracking_thread.start()
-
-            # Start the monitoring in a separate thread, passing autobuild_log_path and autobuild_process
-            while not os.path.exists(autobuild_log_path):
-                time.sleep(10) 
-            monitor_autobuild_hanging_thread = threading.Thread(target=job_monitor.monitor_and_resolve_hangs, args=(autobuild_log_path, phenix_autobuild_process))
-            monitor_autobuild_hanging_thread.start()
-
-            logging.info(f"Monitoring autobuild hanging thread started for {autobuild_log_path}.")
-
-            monitor_autobuild_memory_leaking_thread = threading.Thread(target=job_monitor.monitor_and_resolve_memory_leaks, args=(autobuild_log_path, phenix_autobuild_process))
-            monitor_autobuild_memory_leaking_thread.start()
-
-            logging.info(f"Monitoring autobuild memory leaking thread started for {autobuild_log_path}.")
-
-            phenix_autobuild_process.wait()
-            autobuild_temp_dir = os.path.join(autobuild_folder, "AutoBuild_run_1_/TEMP0")
-            time.sleep(60) # wait for the settlement of the TEMP0 folder
-
-            # Terminate only tracked processes for this run
-            job_monitor.terminate_tracked_processes()
-
-            if os.path.exists(autobuild_temp_dir):
-                shutil.rmtree(autobuild_temp_dir, onerror=utilities.remove_readonly)
-            os.chdir(output_root)
-
-            logging.info("Autobuild process finished.")
-            autobuild_working_path = os.path.join(autobuild_folder, "AutoBuild_run_1_")
-            cc_input_pdb, cc_input_map_coeffs = utilities.get_autobuild_results_paths(autobuild_working_path)
-            logging.info(f"Overall best pdb [Autobuild]: {cc_input_pdb}")
-            logging.info(f"Overall best refine map coeffs [Autobuild]: {cc_input_map_coeffs}")
-            r_factor_folder = autobuild_working_path
+        autobuild_manager = AutobuildManager(job_monitor)
+        
+        cc_input_pdb, cc_input_map_coeffs, r_work, r_free, r_factor_folder = autobuild_manager.run_autobuild(
+            data_path=data_path,
+            autobuild_input_model=autobuild_input_model,
+            successful_phaser_map=successful_phaser_map,
+            sequences=sequences,
+            solvent_content=solvent_content,
+            nproc=args.nproc,
+            no_waters=args.no_waters,
+            skip_autobuild=args.skip_autobuild,
+            output_root=output_root,
+            best_result=best_result if 'best_result' in locals() else None
+        )
     else:
         # For resolution worse than 3.5 Å, run phenix.refine if not already refined
-        if 'successful_refinement_folder' in locals():
+        if 'successful_refinement_folder' in locals() and successful_refinement_folder:
             # Use the existing refined model
             logging.info("Using the existing refined model directly.")
             cc_input_pdb, cc_input_map_coeffs = utilities.get_refined_pdb_and_map(successful_refinement_folder)
@@ -1565,13 +1475,17 @@ def run_pipeline(args):
             logging.info(f"Refined map coeffs [Refinement]: {cc_input_map_coeffs}")
             r_factor_folder = successful_refinement_folder
         elif 'autobuild_input_model' in locals():
+            # NEW: Import the relocated refinement function
+            from af_guided_mr.crystallography.Refine import rfactors_from_phenix_refine
+            
             logging.info("The resolution is worse than 3.5, will use phenix.refine to refine the model.")
-            r_work, r_free, r_factor_folder, _ = utilities.rfactors_from_phenix_refine(autobuild_input_model, args.mtz_path, refine_output_root, nproc=args.nproc)
+            r_work, r_free, r_factor_folder, _ = rfactors_from_phenix_refine(autobuild_input_model, args.mtz_path, refine_output_root, nproc=args.nproc)
             cc_input_pdb, cc_input_map_coeffs = utilities.get_refined_pdb_and_map(r_factor_folder)
             logging.info(f"Refined model [Refinement]: {cc_input_pdb}")
             logging.info(f"Refined map coeffs [Refinement]: {cc_input_map_coeffs}")
 
-    """
+
+"""
     extract r_work, r_free values
     """
     if r_factor_folder:
