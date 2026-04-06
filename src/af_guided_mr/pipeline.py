@@ -18,7 +18,7 @@ from af_guided_mr.crystallography.MolecularReplacement import MolecularReplaceme
 from af_guided_mr.utils.JobMonitor import JobMonitor
 from af_guided_mr.structure_prediction.ColabFold import ColabFold
 from af_guided_mr.data_management.DataManager import DataManager
-from af_guided_mr.crystallography.Refine import RefinementResult, AsyncRefinementManager
+from af_guided_mr.crystallography.Refine import RefinementResult, AsyncRefinementManager, rfactors_from_phenix_refine
 from af_guided_mr.utils import utilities
 from af_guided_mr.crystallography.Validation import calculate_map_model_correlation
 
@@ -541,7 +541,7 @@ def run_pipeline(args):
         logging.info(f"Chains to keep for default mode 01: {keep_chains}")
         kept_chain_count = sum(keep for _, keep in keep_chains)
         print(f"Chains to keep: {keep_chains}")
-        pdb_manager.process_pdb_file_for_phaser(phaser_output_pdb, keep_chains, partial_pdb_path)
+        molecular_replacement.process_pdb_file_for_phaser(phaser_output_pdb, keep_chains, partial_pdb_path)
 
         if kept_chain_count != total_expected_chains:
             logging.warning("Partial success: Not all expected chains are kept.")
@@ -617,7 +617,7 @@ def run_pipeline(args):
                             # Generate new partial pdb for Interpro mode if necessary
                             keep_chains = molecular_replacement.parse_phaser_log(phaser_info["default_mode"]["phaser_log"]['02'])
                             default_2nd_partial_pdb_path = os.path.join(phaser_info["default_mode"]["output_dir"]['02'], "default_mode_2nd_partial.pdb")
-                            pdb_manager.process_pdb_file_for_phaser(default_2nd_output_pdb, keep_chains, default_2nd_partial_pdb_path, partial_pdb_path)
+                            molecular_replacement.process_pdb_file_for_phaser(default_2nd_output_pdb, keep_chains, default_2nd_partial_pdb_path, partial_pdb_path)
                             # update partial_pdb_path
                             partial_pdb_path = default_2nd_partial_pdb_path
                           
@@ -651,7 +651,7 @@ def run_pipeline(args):
             phaser_info['interpro_mode']['interpro_switch'] = 'off'   
 
         if partial_pdb_path is not None and pdb_manager.get_sequence_length_from_pdb(partial_pdb_path) > 0: 
-            r_work_default_mode, r_free_default_mode, refinement_folder_default_mode, _ = utilities.rfactors_from_phenix_refine(partial_pdb_path, args.mtz_path, refine_output_root, nproc=args.nproc)
+            r_work_default_mode, r_free_default_mode, refinement_folder_default_mode, _ = rfactors_from_phenix_refine(partial_pdb_path, args.mtz_path, refine_output_root, nproc=args.nproc)
             refinement_results.append(RefinementResult(
                 cluster_number=-3,  # Use -1 for non-cluster refinements
                 r_work=r_work_default_mode,
@@ -755,7 +755,7 @@ def run_pipeline(args):
                 keep_chains = molecular_replacement.parse_phaser_log(interpro_log_file)
                 interpro_phaser_output_pdb = os.path.join(interpro_mode_dir, "PHASER.1.pdb")  # Path to Phaser's output PDB
                 interpro_partial_pdb_path = os.path.join(interpro_mode_dir, "interpro_partial.pdb")
-                pdb_manager.process_pdb_file_for_phaser(interpro_phaser_output_pdb, keep_chains, interpro_partial_pdb_path, partial_pdb_path)
+                molecular_replacement.process_pdb_file_for_phaser(interpro_phaser_output_pdb, keep_chains, interpro_partial_pdb_path, partial_pdb_path)
 
                 interpro_phaser_output_pdb_residue_count = pdb_manager.get_sequence_length_from_pdb(interpro_phaser_output_pdb) if interpro_phaser_output_pdb else 0
                 interpro_partial_pdb_path_residue_count = pdb_manager.get_sequence_length_from_pdb(interpro_partial_pdb_path) if interpro_partial_pdb_path else 0
@@ -766,7 +766,7 @@ def run_pipeline(args):
                         interpro_partial_pdb_path_residue_count != 0):
                     phaser_info["interpro_mode"]['tfz_score'], LLG = molecular_replacement.get_final_tfz(interpro_mode_dir)
                     logging.info(f"TFZ score for interpro phaser run: {phaser_info['interpro_mode']['tfz_score']}, LLG: {LLG}")                
-                    r_work_interpro_mode, r_free_interpro_mode, refinement_folder_interpro_mode, _ = utilities.rfactors_from_phenix_refine(interpro_partial_pdb_path, args.mtz_path, refine_output_root, nproc=args.nproc)
+                    r_work_interpro_mode, r_free_interpro_mode, refinement_folder_interpro_mode, _ = rfactors_from_phenix_refine(interpro_partial_pdb_path, args.mtz_path, refine_output_root, nproc=args.nproc)
                     logging.info(f"interpro mode refinement output: {refinement_folder_interpro_mode}")
                     refinement_results.append(RefinementResult(
                         cluster_number=-2,  # Use -1 for non-cluster refinements
@@ -891,7 +891,7 @@ def run_pipeline(args):
                 keep_chains = molecular_replacement.parse_phaser_log(pae_log_file)
                 pae_phaser_output_pdb = os.path.join(pae_mode_dir, "PHASER.1.pdb")  # Path to Phaser's output PDB
                 pae_partial_pdb_path = os.path.join(pae_mode_dir, "pae_partial.pdb")
-                pdb_manager.process_pdb_file_for_phaser(pae_phaser_output_pdb, keep_chains, pae_partial_pdb_path, partial_pdb_path)
+                molecular_replacement.process_pdb_file_for_phaser(pae_phaser_output_pdb, keep_chains, pae_partial_pdb_path, partial_pdb_path)
 
                 # Get residue counts
                 pae_phaser_output_pdb_residue_count = (
@@ -921,7 +921,7 @@ def run_pipeline(args):
                     logging.info(f"TFZ score for pae phaser run: {phaser_info['pae_mode']['tfz_score']}, LLG: {LLG}")                
 
                     # Perform refinement using Phenix
-                    r_work_pae_mode, r_free_pae_mode, refinement_folder_pae_mode, _ = utilities.rfactors_from_phenix_refine(
+                    r_work_pae_mode, r_free_pae_mode, refinement_folder_pae_mode, _ = rfactors_from_phenix_refine(
                         pae_partial_pdb_path, args.mtz_path, refine_output_root, nproc=args.nproc
                     )
                     logging.info(f"pae mode refinement output: {refinement_folder_pae_mode}")
@@ -1252,7 +1252,7 @@ def run_pipeline(args):
                                 keep_chains = molecular_replacement.parse_phaser_log(os.path.join(mr_cluster_dir, "PHASER.log"))
                                 AF_cluster_phaser_output_pdb = os.path.join(mr_cluster_dir, "PHASER.1.pdb")  # Path to Phaser's output PDB
                                 AF_cluster_partial_pdb_path = os.path.join(mr_cluster_dir, f"AF_cluster_partial_{cluster_number}.pdb")
-                                pdb_manager.process_pdb_file_for_phaser(AF_cluster_phaser_output_pdb, keep_chains, AF_cluster_partial_pdb_path, partial_pdb_path)
+                                molecular_replacement.process_pdb_file_for_phaser(AF_cluster_phaser_output_pdb, keep_chains, AF_cluster_partial_pdb_path, partial_pdb_path)
 
                                 af_cluster_tfz_score, _ = molecular_replacement.get_final_tfz(mr_cluster_dir)
 
@@ -1318,7 +1318,7 @@ def run_pipeline(args):
                                     keep_chains = molecular_replacement.parse_phaser_log(os.path.join(mr_cluster_ensemble_dir, "PHASER.log"))
                                     AF_cluster_phaser_output_pdb = os.path.join(mr_cluster_ensemble_dir, "PHASER.1.pdb")
                                     AF_cluster_partial_pdb_path = os.path.join(mr_cluster_ensemble_dir, f"AF_cluster_partial_{cluster_number}.pae.pdb")
-                                    pdb_manager.process_pdb_file_for_phaser(AF_cluster_phaser_output_pdb, keep_chains, AF_cluster_partial_pdb_path, partial_pdb_path)
+                                    molecular_replacement.process_pdb_file_for_phaser(AF_cluster_phaser_output_pdb, keep_chains, AF_cluster_partial_pdb_path, partial_pdb_path)
 
                                     af_cluster_pae_tfz_score, _ = molecular_replacement.get_final_tfz(mr_cluster_ensemble_dir)
 
@@ -1476,8 +1476,6 @@ def run_pipeline(args):
             logging.info(f"Refined map coeffs [Refinement]: {cc_input_map_coeffs}")
             r_factor_folder = successful_refinement_folder
         elif 'autobuild_input_model' in locals():
-            # NEW: Import the relocated refinement function
-            from af_guided_mr.crystallography.Refine import rfactors_from_phenix_refine
             
             logging.info("The resolution is worse than 3.5, will use phenix.refine to refine the model.")
             r_work, r_free, r_factor_folder, _ = rfactors_from_phenix_refine(autobuild_input_model, args.mtz_path, refine_output_root, nproc=args.nproc)

@@ -83,7 +83,7 @@ class AutobuildManager:
                 self.job_monitor.update_subjob_pids()
                 time.sleep(60)
                 
-        tracking_thread = threading.Thread(target=update_tracking)
+        tracking_thread = threading.Thread(target=update_tracking, daemon=True)
         tracking_thread.start()
 
         # Start the monitoring threads
@@ -92,14 +92,16 @@ class AutobuildManager:
             
         monitor_autobuild_hanging_thread = threading.Thread(
             target=self.job_monitor.monitor_and_resolve_hangs, 
-            args=(autobuild_log_path, phenix_autobuild_process)
+            args=(autobuild_log_path, phenix_autobuild_process),
+            daemon=True
         )
         monitor_autobuild_hanging_thread.start()
         logging.info(f"Monitoring autobuild hanging thread started for {autobuild_log_path}.")
 
         monitor_autobuild_memory_leaking_thread = threading.Thread(
             target=self.job_monitor.monitor_and_resolve_memory_leaks, 
-            args=(autobuild_log_path, phenix_autobuild_process)
+            args=(autobuild_log_path, phenix_autobuild_process),
+            daemon=True
         )
         monitor_autobuild_memory_leaking_thread.start()
         logging.info(f"Monitoring autobuild memory leaking thread started for {autobuild_log_path}.")
