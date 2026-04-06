@@ -1486,7 +1486,7 @@ def run_pipeline(args):
             logging.info(f"Refined map coeffs [Refinement]: {cc_input_map_coeffs}")
 
 
-"""
+    """
     extract r_work, r_free values
     """
     if r_factor_folder:
