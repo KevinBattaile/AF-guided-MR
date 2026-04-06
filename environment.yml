@@ -29,3 +29,4 @@ dependencies:
       - jax[cuda12]==0.5.3
       - "colabfold[alphafold-minus-jax] @ git+https://github.com/sokrypton/ColabFold"
       - "colabfold[alphafold]"
+      - gradio>=4.0.0

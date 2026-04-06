@@ -70,5 +70,83 @@ Run the pipeline using the main entry point `run_afmr.py`.
 3. **Molecular Replacement:** Calculates the Matthews coefficient and runs `phaser` to place the models into the asymmetric unit.
 4. **AutoBuild & Refinement:** Orchestrates `phenix.autobuild` and `phenix.refine` to rebuild missing regions, apply density modifications, and calculate final R-work/R-free and map-model correlation statistics.
 
-## Coming Soon
-* **Interactive WebUI:** A Gradio-based graphical interface for users who prefer a point-and-click experience over the command line.
+## Graphical User Interface (GUI)
+
+AF-Guided MR includes a web-based GUI powered by Gradio. This interface allows you to run the pipeline, adjust advanced settings, and monitor execution logs in real-time directly from your web browser.
+
+### Launching the GUI
+
+1. Activate your Conda environment:
+   ```bash
+   conda activate afmr
+   ```
+2. Start the web server from the root of the repository:
+   ```bash
+   python gui.py
+   ```
+3. Open your web browser and navigate to the local URL provided in the terminal (typically `http://127.0.0.1:7860`). If running on a remote cluster or server, navigate to `http://<server_ip_address>:7860`.
+
+### GUI Features
+* **Drag-and-Drop Uploads:** Easily supply your target `.fasta` and diffraction `.mtz` files.
+* **Live Logging:** Monitor standard output, warnings, and underlying subprocesses (like Phenix and ColabFold) in real-time.
+* **Process Management:** Use the **Abort Job** button to safely kill underlying threads and subprocesses if you need to cancel a run early.
+* **Advanced Settings:** Toggle specific pipeline behaviors (like skipping AutoBuild or forcing AlphaFold clustering) via the dropdown menu.
+
+### Running the GUI as a Background Service
+
+If you are running AF-Guided MR on a remote server or computing cluster, you will likely want to keep the GUI running continuously even after you close your SSH terminal. You can do this using either `nohup` (for a quick, temporary background process) or `systemd` (for a robust, permanent production service).
+
+#### Option A: The Quick Method (`nohup`)
+This method runs the server in the background and ignores terminal disconnects. All terminal output is saved to a log file.
+
+1. Activate your Conda environment:
+   ```bash
+   conda activate afmr
+   ```
+2. Start the application with `nohup`:
+   ```bash
+   nohup python gui.py > gradio_gui.log 2>&1 &
+   ```
+3. To stop the GUI later, find the process ID (PID) and kill it:
+   ```bash
+   ps -ef | grep app.py
+   kill <PID>
+   ```
+
+#### Option B: The Production Method (`systemd`)
+This method creates a permanent background service that automatically starts when the server boots and restarts itself if it crashes. *(Note: Requires sudo/root privileges).*
+
+1. Create a new service file:
+   ```bash
+   sudo nano /etc/systemd/system/afmr-gui.service
+   ```
+2. Paste the following configuration. **Make sure to update** the `User`, `WorkingDirectory`, and the `ExecStart` path to point to the Python executable inside your specific Conda environment:
+   ```ini
+   [Unit]
+   Description=AF-Guided MR Gradio WebUI
+   After=network.target
+
+   [Service]
+   User=your_username
+   WorkingDirectory=/location/of/install
+   ExecStart=/path/to/your/conda/envs/afmr/bin/python gui.py
+   Restart=always
+   RestartSec=3
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+3. Reload the systemd daemon so it recognizes your new service:
+   ```bash
+   sudo systemctl daemon-reload
+   ```
+4. Enable the service (so it starts on boot) and start it immediately:
+   ```bash
+   sudo systemctl enable afmr-gui
+   sudo systemctl start afmr-gui
+   ```
+5. You can check the status and live logs of the service at any time using:
+   ```bash
+   sudo systemctl status afmr-gui
+   journalctl -u afmr-gui.service -f
+   ```
