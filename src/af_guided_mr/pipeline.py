@@ -20,6 +20,7 @@ from af_guided_mr.structure_prediction.ColabFold import ColabFold
 from af_guided_mr.data_management.DataManager import DataManager
 from af_guided_mr.crystallography.Refine import RefinementResult, AsyncRefinementManager
 from af_guided_mr.utils import utilities
+from af_guided_mr.crystallography.Validation import calculate_map_model_correlation
 
 af_cluster_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "structure_prediction", "AF_cluster.py")
 
@@ -536,7 +537,7 @@ def run_pipeline(args):
         partial_pdb_path = os.path.join(phaser_info["default_mode"]["output_dir"]['01'], "default_mode_partial.pdb")
         
         total_expected_chains = sum(copy_numbers.values())
-        keep_chains = pdb_manager.parse_phaser_log(phaser_log_path)
+        keep_chains = molecular_replacement.parse_phaser_log(phaser_log_path)
         logging.info(f"Chains to keep for default mode 01: {keep_chains}")
         kept_chain_count = sum(keep for _, keep in keep_chains)
         print(f"Chains to keep: {keep_chains}")
@@ -614,7 +615,7 @@ def run_pipeline(args):
                                 total_missing_copies = interpro_copy_numbers
                                 phaser_info['interpro_mode']['interpro_switch'] = 'on' # switch to interpro mode
                             # Generate new partial pdb for Interpro mode if necessary
-                            keep_chains = pdb_manager.parse_phaser_log(phaser_info["default_mode"]["phaser_log"]['02'])
+                            keep_chains = molecular_replacement.parse_phaser_log(phaser_info["default_mode"]["phaser_log"]['02'])
                             default_2nd_partial_pdb_path = os.path.join(phaser_info["default_mode"]["output_dir"]['02'], "default_mode_2nd_partial.pdb")
                             pdb_manager.process_pdb_file_for_phaser(default_2nd_output_pdb, keep_chains, default_2nd_partial_pdb_path, partial_pdb_path)
                             # update partial_pdb_path
@@ -751,7 +752,7 @@ def run_pipeline(args):
             phaser_info["interpro_mode"]['success'] = molecular_replacement.handle_phaser_output(interpro_mode_dir)
             if phaser_info["interpro_mode"]['success']:
                 # Generate new partial pdb for pae mode if necessary
-                keep_chains = pdb_manager.parse_phaser_log(interpro_log_file)
+                keep_chains = molecular_replacement.parse_phaser_log(interpro_log_file)
                 interpro_phaser_output_pdb = os.path.join(interpro_mode_dir, "PHASER.1.pdb")  # Path to Phaser's output PDB
                 interpro_partial_pdb_path = os.path.join(interpro_mode_dir, "interpro_partial.pdb")
                 pdb_manager.process_pdb_file_for_phaser(interpro_phaser_output_pdb, keep_chains, interpro_partial_pdb_path, partial_pdb_path)
@@ -887,7 +888,7 @@ def run_pipeline(args):
             phaser_info["pae_mode"]['success'] = molecular_replacement.handle_phaser_output(pae_mode_dir)
             if phaser_info["pae_mode"]['success']:
                 # Generate new partial pdb for AF_cluster mode if necessary
-                keep_chains = pdb_manager.parse_phaser_log(pae_log_file)
+                keep_chains = molecular_replacement.parse_phaser_log(pae_log_file)
                 pae_phaser_output_pdb = os.path.join(pae_mode_dir, "PHASER.1.pdb")  # Path to Phaser's output PDB
                 pae_partial_pdb_path = os.path.join(pae_mode_dir, "pae_partial.pdb")
                 pdb_manager.process_pdb_file_for_phaser(pae_phaser_output_pdb, keep_chains, pae_partial_pdb_path, partial_pdb_path)
@@ -1248,7 +1249,7 @@ def run_pipeline(args):
                             # do pae mode on that model. reference: pae_mr_models = {sequence_id: protein_info[sequence_id]["mr_models"]["mr_model_path_pae_mode"] for sequence_id in protein_info}
                             if AF_cluster_mr_success:
                                 # Generate new partial PDB if necessary
-                                keep_chains = pdb_manager.parse_phaser_log(os.path.join(mr_cluster_dir, "PHASER.log"))
+                                keep_chains = molecular_replacement.parse_phaser_log(os.path.join(mr_cluster_dir, "PHASER.log"))
                                 AF_cluster_phaser_output_pdb = os.path.join(mr_cluster_dir, "PHASER.1.pdb")  # Path to Phaser's output PDB
                                 AF_cluster_partial_pdb_path = os.path.join(mr_cluster_dir, f"AF_cluster_partial_{cluster_number}.pdb")
                                 pdb_manager.process_pdb_file_for_phaser(AF_cluster_phaser_output_pdb, keep_chains, AF_cluster_partial_pdb_path, partial_pdb_path)
@@ -1314,7 +1315,7 @@ def run_pipeline(args):
                                 AF_cluster_pae_success = molecular_replacement.handle_phaser_output(mr_cluster_ensemble_dir)
                                 if AF_cluster_pae_success:
                                     # Generate new partial PDB if necessary
-                                    keep_chains = pdb_manager.parse_phaser_log(os.path.join(mr_cluster_ensemble_dir, "PHASER.log"))
+                                    keep_chains = molecular_replacement.parse_phaser_log(os.path.join(mr_cluster_ensemble_dir, "PHASER.log"))
                                     AF_cluster_phaser_output_pdb = os.path.join(mr_cluster_ensemble_dir, "PHASER.1.pdb")
                                     AF_cluster_partial_pdb_path = os.path.join(mr_cluster_ensemble_dir, f"AF_cluster_partial_{cluster_number}.pae.pdb")
                                     pdb_manager.process_pdb_file_for_phaser(AF_cluster_phaser_output_pdb, keep_chains, AF_cluster_partial_pdb_path, partial_pdb_path)
@@ -1506,13 +1507,13 @@ def run_pipeline(args):
         cc_input_pdb = autobuild_input_model
     if cc_input_map_coeffs is None:
         cc_input_map_coeffs = successful_phaser_map
-    phaser_model_map_cc = utilities.calculate_map_model_correlation(cc_input_pdb, args.mtz_path, cc_input_map_coeffs, solvent_content, cc_working_folder)
+    phaser_model_map_cc = calculate_map_model_correlation(cc_input_pdb, args.mtz_path, cc_input_map_coeffs, solvent_content, cc_working_folder)
     logging.info(f"Phaser model map correlation: {phaser_model_map_cc}")
     reference_model_map_cc = None
     reference_pdb = args.reference_model if args.reference_model is not None else None
     reference_map = args.reference_map if args.reference_map is not None else None
     if args.reference_model is not None or args.reference_map is not None:
-        reference_model_map_cc = utilities.calculate_map_model_correlation(cc_input_pdb, args.mtz_path, cc_input_map_coeffs, solvent_content, cc_working_folder, reference_pdb, reference_map)
+        reference_model_map_cc = calculate_map_model_correlation(cc_input_pdb, args.mtz_path, cc_input_map_coeffs, solvent_content, cc_working_folder, reference_pdb, reference_map)
         logging.info(f"Reference model map correlation: {reference_model_map_cc}")
     os.chdir(output_root)
     # remove the cc_working_folder

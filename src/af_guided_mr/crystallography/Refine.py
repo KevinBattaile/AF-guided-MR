@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from typing import Dict, Optional
 
 # Import the lightweight helper functions that remain in utilities
-from af_guided_mr.utils.utilities import get_mtz_labels, extract_rfactors
+from af_guided_mr.utils.utilities import extract_rfactors
+from af_guided_mr.data_management.DataManager import DataManager
 
 @dataclass
 class RefinementResult:
@@ -60,7 +61,7 @@ def rfactors_from_phenix_refine(pdb_path, data_path, refine_output_root, nproc):
         data_path = os.path.join(refine_output_root, "refinement_data.mtz")
 
     # Preemptively determine data labels
-    selected_data_labels, selected_free_r_label = get_mtz_labels(data_path)
+    selected_data_labels, selected_free_r_label = DataManager.get_mtz_labels(data_path)
 
     # Initialize the phenix_refine_cmd with base parameters
     phenix_refine_cmd = [
