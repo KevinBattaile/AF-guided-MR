@@ -153,7 +153,7 @@ This method creates a permanent background service that automatically starts whe
    
 ## Reference
 
-This is a fork of software described below and 'should' maintain all of the described functionality in the publication.
+This is a fork of software described below and 'should' maintain all of the described functionality in the publication and original repository.
 
 Original repository: https://github.com/ww2283/AF-guided-MR/tree/main
 
