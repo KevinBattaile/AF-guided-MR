@@ -150,3 +150,11 @@ This method creates a permanent background service that automatically starts whe
    sudo systemctl status afmr-gui
    journalctl -u afmr-gui.service -f
    ```
+   
+## Reference
+
+This is a fork of software described below and 'should' maintain all of the described functionality in the publication.
+
+Original repository: https://github.com/ww2283/AF-guided-MR/tree/main
+
+Wang W, Gong Z, Hendrickson WA. AlphaFold-guided molecular replacement for solving challenging crystal structures. Acta Crystallogr D Struct Biol. 2025 Jan 1;81(Pt 1):4-21. doi: 10.1107/S2059798324011999. Epub 2025 Jan 1. PMID: 39711199; PMCID: PMC11740581.
