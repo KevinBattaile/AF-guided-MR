@@ -160,3 +160,5 @@ Original repository: https://github.com/ww2283/AF-guided-MR/tree/main
     Wang W, Gong Z, Hendrickson WA. AlphaFold-guided molecular replacement for solving challenging crystal structures. 
     Acta Crystallogr D Struct Biol. 2025 Jan 1;81(Pt 1):4-21. doi: 10.1107/S2059798324011999. Epub 2025 Jan 1. 
     PMID: 39711199; PMCID: PMC11740581.
+
+    https://doi.org/10.1107/S2059798324011999
